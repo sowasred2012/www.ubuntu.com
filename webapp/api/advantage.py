@@ -122,7 +122,8 @@ def accept_renewal(session, renewal_id):
             method="post",
             path=f"v1/renewals/{renewal_id}/acceptance",
             session=session,
-        )
+        ),
+        timeout=30,
     )
 
     return response.json()

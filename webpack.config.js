@@ -22,6 +22,7 @@ module.exports = {
     "tco-calculator": "./static/js/src/tco-calculator.js",
     "sticky-nav": "./static/js/src/sticky-nav.js",
     imageBuilder: "./static/js/src/imageBuilder.js",
+    stripe: "./static/js/src/stripe.js",
   },
   mode: process.env.ENVIRONMENT === "devel" ? "development" : "production",
   output: {

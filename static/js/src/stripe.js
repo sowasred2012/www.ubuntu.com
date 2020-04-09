@@ -145,7 +145,7 @@
   }
 
   function handleIncompleteRenewal(renewal) {
-    if (renewal.stripeInvoices.length > 0) {
+    if (renewal.stripeInvoices) {
       subscriptionStatus =
         renewal.stripeInvoices[renewal.stripeInvoices.length - 1]
           .subscription_status;

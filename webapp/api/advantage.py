@@ -26,7 +26,7 @@ def _prepare_request(method, path, data=None, session=None):
     return request.prepare()
 
 
-def _send(request, timeout=3):
+def _send(request, timeout=5):
     response = api_session.send(request, timeout=timeout)
     response.raise_for_status()
     return response

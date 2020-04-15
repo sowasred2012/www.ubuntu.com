@@ -26,9 +26,12 @@ def _prepare_request(method, path, data=None, session=None):
     return request.prepare()
 
 
-def _send(request, timeout=5):
+def _send(request, timeout=5, raise_http_errors=True):
     response = api_session.send(request, timeout=timeout)
-    response.raise_for_status()
+
+    if raise_http_errors:
+        response.raise_for_status()
+
     return response
 
 
@@ -100,7 +103,8 @@ def put_method_id(session, account_id, payment_method_id):
             path=f"v1/accounts/{account_id}/payment-method/stripe",
             data={"paymentMethodID": payment_method_id},
             session=session,
-        )
+        ),
+        raise_http_errors=False,
     )
 
     return response.json()

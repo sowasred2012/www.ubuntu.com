@@ -140,20 +140,26 @@
               payment_method_id: result.paymentMethod.id,
               account_id: accountID,
             }),
-          }).then((response) => {
-            if (response.ok) {
-              setPaymentInformation(result.paymentMethod);
-              showPayDialog();
-            } else {
-              console.log(response);
-              // TODO: how do we want to handle errors creating payment methods?
-              // Feels like it wouldn't inspire confidence to ask the user to try
-              // inputting them again.
-              presentCardError(
-                "We encountered a problem while creating your payment method. Please contact support."
-              );
-            }
-          });
+          })
+            .then((response) => {
+              return response.json();
+            })
+            .then((data) => {
+              if (data.message) {
+                // this is not good, ua-contracts team are working on a better
+                // way to return this data, but it's low on their priority list
+                handleCardError(data.message);
+              } else if (data.createdAt) {
+                setPaymentInformation(result.paymentMethod);
+                showPayDialog();
+              } else {
+                console.log(data);
+                // TODO: how do we want to handle errors creating payment methods?
+                // Feels like it wouldn't inspire confidence to ask the user to try
+                // inputting them again.
+                presentCardError();
+              }
+            });
         } else {
           presentCardError(result.error.message);
         }
@@ -162,6 +168,19 @@
         // TODO handle this error
         console.log(error);
       });
+  }
+
+  function handleCardError(message) {
+    const errorString = "unexpected error setting customer payment method: ";
+
+    if (message.includes(errorString)) {
+      const json_string = message.replace(errorString, "");
+      const error_object = JSON.parse(json_string);
+
+      presentCardError(error_object.message);
+    } else {
+      presentCardError();
+    }
   }
 
   function handleIncompletePayment(invoice) {
@@ -225,7 +244,11 @@
       });
   }
 
-  function presentCardError(message) {
+  function presentCardError(message = null) {
+    if (!message) {
+      message =
+        "We encountered a problem while creating your payment method. Please contact support.";
+    }
     cardErrorElement.textContent = message;
     cardErrorElement.classList.remove("u-hide");
   }

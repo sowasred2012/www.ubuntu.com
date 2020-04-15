@@ -1,12 +1,26 @@
 (function () {
-  const form = document.getElementById("payment-form");
   const modal = document.getElementById("renewal-modal");
+
+  const form = document.getElementById("payment-form");
   const paymentMethodDetails = document.getElementById(
     "payment-method-details"
   );
   const renewalCTAs = document.querySelectorAll(".js-renewal-cta");
-  const addPaymentMethodButton = document.querySelector(".js-payment-method");
-  const processPaymentButton = document.querySelector(".js-process-payment");
+
+  const addPaymentMethodButton = modal.querySelector(".js-payment-method");
+  const cardExpiryEl = modal.querySelector(".js-customer-card-expiry");
+  const cardImgEl = modal.querySelector(".js-customer-card-brand");
+  const cardTextEl = modal.querySelector(".js-customer-card");
+  const customerEmailEl = modal.querySelector(".js-customer-email");
+  const customerNameEl = modal.querySelector(".js-customer-name");
+  const loadingIndicator = modal.querySelector(".p-icon--spinner");
+  const nameElement = modal.querySelector(".js-renewal-name");
+  const processPaymentButton = modal.querySelector(".js-process-payment");
+  const quantityElement = modal.querySelector(".js-renewal-quantity");
+  const startElement = modal.querySelector(".js-renewal-start");
+  const totalElement = modal.querySelector(".js-renewal-total");
+
+  const resetModalButtons = modal.querySelectorAll(".js-reset-modal");
 
   const stripe = Stripe("pk_test_yndN9H0GcJffPe0W58Nm64cM00riYG4N46");
   const elements = stripe.elements();
@@ -32,13 +46,15 @@
   const cardErrorElement = document.getElementById("card-errors");
 
   let accountID;
-  let renewalID;
+  let billingInfo;
+  let cardInfo;
   let invoice;
-  let subscriptionStatus;
   let paymentIntentStatus;
+  let renewalID;
+  let subscriptionStatus;
 
   attachCTAevents();
-  attachFormSubmitEvents();
+  attachModalButtonEvents();
   attachModalEvents();
   setupCardElements();
 
@@ -56,7 +72,7 @@
     });
   }
 
-  function attachFormSubmitEvents() {
+  function attachModalButtonEvents() {
     addPaymentMethodButton.addEventListener("click", (e) => {
       e.preventDefault();
       createPaymentMethod();
@@ -65,6 +81,13 @@
     processPaymentButton.addEventListener("click", (e) => {
       e.preventDefault();
       processStripePayment();
+    });
+
+    resetModalButtons.forEach((button) => {
+      button.addEventListener("click", (e) => {
+        e.preventDefault();
+        resetModal();
+      });
     });
   }
 
@@ -75,9 +98,8 @@
       }
     }
 
-    // Add click handler for clicks on elements with aria-controls
-    document.addEventListener("click", function (event) {
-      let targetControls = event.target.getAttribute("aria-controls");
+    document.addEventListener("click", function (e) {
+      let targetControls = e.target.getAttribute("aria-controls");
 
       if (targetControls) {
         toggleModal(document.getElementById(targetControls));
@@ -89,7 +111,6 @@
     let formData = new FormData(form);
 
     addPaymentMethodButton.disabled = true;
-    addPaymentMethodButton.classList.add("is-actioned");
 
     stripe
       .createPaymentMethod({
@@ -121,7 +142,8 @@
             }),
           }).then((response) => {
             if (response.ok) {
-              showPayDialog(result.paymentMethod);
+              setPaymentInformation(result.paymentMethod);
+              showPayDialog();
             } else {
               console.log(response);
               // TODO: how do we want to handle errors creating payment methods?
@@ -179,7 +201,6 @@
   }
 
   function handleSuccessfulPayment() {
-    // TODO trigger a success state (when we know what that looks like)
     alert("payment successful");
     setTimeout(() => {
       location.reload();
@@ -205,14 +226,12 @@
   }
 
   function presentCardError(message) {
-    console.log(message);
     cardErrorElement.textContent = message;
-    cardErrorElement.classList.add("visible");
+    cardErrorElement.classList.remove("u-hide");
   }
 
   function processStripePayment() {
     processPaymentButton.disabled = true;
-    processPaymentButton.classList.add("is-actioned");
 
     fetch(`/advantage/renewals/${renewalID}/process-payment`, {
       method: "POST",
@@ -228,11 +247,6 @@
   }
 
   function setRenewalInformation(renewalData) {
-    const nameElement = modal.querySelector(".js-renewal-name");
-    const quantityElement = modal.querySelector(".js-renewal-quantity");
-    const startElement = modal.querySelector(".js-renewal-start");
-    const totalElement = modal.querySelector(".js-renewal-total");
-
     let startDate = new Date(renewalData.start);
 
     let formattedTotal = parseFloat(renewalData.total).toLocaleString("en", {
@@ -240,10 +254,27 @@
       currency: renewalData.currency,
     });
 
-    nameElement.innerHTML = `Subscription name: ${renewalData.name}`;
+    nameElement.innerHTML = `Renew "${renewalData.name}"`;
     quantityElement.innerHTML = `Quantity: ${renewalData.quantity}`;
     startElement.innerHTML = `Start date: ${startDate.toDateString()}`;
     totalElement.innerHTML = `Total: ${formattedTotal}`;
+  }
+
+  function setPaymentInformation(paymentMethod) {
+    billingInfo = paymentMethod.billing_details;
+    cardInfo = paymentMethod.card;
+
+    const cardBrandFormatted =
+      cardInfo.brand.charAt(0).toUpperCase() + cardInfo.brand.slice(1);
+    const cardText = `${cardBrandFormatted} ending ${cardInfo.last4}`;
+    const cardExpiry = `Expires: ${cardInfo.exp_month}/${cardInfo.exp_year}`;
+
+    cardImgEl.innerHTML = cardInfo.brand;
+    // TODO use the above to set an image of the card brand, rather than text
+    cardTextEl.innerHTML = cardText;
+    cardExpiryEl.innerHTML = cardExpiry;
+    customerNameEl.innerHTML = billingInfo.name;
+    customerEmailEl.innerHTML = billingInfo.email;
   }
 
   function setupCardElements() {
@@ -260,27 +291,20 @@
     });
   }
 
-  function showPayDialog(paymentMethod) {
-    const billingInfo = paymentMethod.billing_details;
-    const cardInfo = paymentMethod.card;
-    const cardText = `${cardInfo.brand} ending ${cardInfo.last4}`;
-    const cardExpiry = `${cardInfo.exp_month}/${cardInfo.exp_year}`;
-
-    const cardImgEl = document.querySelector(".js-customer-card-brand");
-    const cardTextEl = document.querySelector(".js-customer-card");
-    const cardExpiryEl = document.querySelector(".js-customer-card-expiry");
-    const customerNameEl = document.querySelector(".js-customer-name");
-    const customerEmailEl = document.querySelector(".js-customer-email");
-
-    cardImgEl.innerHTML = cardInfo.brand;
-    // TODO use the above to set an image of the card brand, rather than text
-    cardTextEl.innerHTML = cardText;
-    cardExpiryEl.innerHTML = cardExpiry;
-    customerNameEl.innerHTML = billingInfo.name;
-    customerEmailEl.innerHTML = billingInfo.email;
-
+  function showPayDialog() {
     form.classList.add("u-hide");
     paymentMethodDetails.classList.remove("u-hide");
+    addPaymentMethodButton.classList.add("u-hide");
+    processPaymentButton.classList.remove("u-hide");
     processPaymentButton.disabled = false;
+  }
+
+  function resetModal() {
+    form.reset();
+    card.clear();
+    form.classList.remove("u-hide");
+    paymentMethodDetails.classList.add("u-hide");
+    addPaymentMethodButton.disabled = true;
+    processPaymentButton.disabled = true;
   }
 })();

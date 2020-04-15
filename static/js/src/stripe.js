@@ -327,7 +327,9 @@
     card.clear();
     form.classList.remove("u-hide");
     paymentMethodDetails.classList.add("u-hide");
+    addPaymentMethodButton.classList.remove("u-hide");
     addPaymentMethodButton.disabled = true;
+    processPaymentButton.classList.add("u-hide");
     processPaymentButton.disabled = true;
   }
 })();

@@ -274,7 +274,6 @@ def post_stripe_invoice_id():
         if not flask.request.is_json:
             return flask.jsonify({"error": "JSON required"}), 400
 
-        print(flask.request.json)
         invoice_id = flask.request.json.get("invoice_id")
         if not invoice_id:
             return flask.jsonify({"error": "invoice_id required"}), 400

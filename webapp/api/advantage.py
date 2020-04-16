@@ -110,6 +110,19 @@ def put_method_id(session, account_id, payment_method_id):
     return response.json()
 
 
+def post_stripe_invoice_id(session, invoice_id, renewal_id):
+    response = _send(
+        _prepare_request(
+            method="post",
+            path=f"v1/renewals/{renewal_id}/payment/stripe/{invoice_id}",
+            session=session,
+        ),
+        raise_http_errors=False,
+    )
+
+    return response.json()
+
+
 def get_renewal(session, renewal_id):
     response = _send(
         _prepare_request(
@@ -128,6 +141,7 @@ def accept_renewal(session, renewal_id):
             session=session,
         ),
         timeout=30,
+        raise_http_errors=False,
     )
 
     return response.json()

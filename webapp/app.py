@@ -42,6 +42,7 @@ from webapp.views import (
     download_thank_you,
     get_renewal,
     post_stripe_method_id,
+    post_stripe_invoice_id,
     releasenotes_redirect,
 )
 from webapp.login import login_handler, logout
@@ -119,6 +120,11 @@ app.add_url_rule("/advantage", view_func=advantage_view)
 app.add_url_rule(
     "/advantage/payment-method",
     view_func=post_stripe_method_id,
+    methods=["POST"],
+)
+app.add_url_rule(
+    "/advantage/renewals/invoice",
+    view_func=post_stripe_invoice_id,
     methods=["POST"],
 )
 app.add_url_rule(

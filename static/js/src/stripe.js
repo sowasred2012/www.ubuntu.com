@@ -20,7 +20,8 @@
   const startElement = modal.querySelector(".js-renewal-start");
   const totalElement = modal.querySelector(".js-renewal-total");
 
-  const resetModalButtons = modal.querySelectorAll(".js-reset-modal");
+  const resetModalButton = modal.querySelector(".js-reset-modal");
+  const cancelModalButton = modal.querySelector(".js-cancel-modal");
 
   const stripe = Stripe("pk_test_yndN9H0GcJffPe0W58Nm64cM00riYG4N46");
   const elements = stripe.elements();
@@ -83,11 +84,14 @@
       processStripePayment();
     });
 
-    resetModalButtons.forEach((button) => {
-      button.addEventListener("click", (e) => {
-        e.preventDefault();
-        resetModal();
-      });
+    resetModalButton.addEventListener("click", (e) => {
+      e.preventDefault();
+      resetModal();
+    });
+
+    cancelModalButton.addEventListener("click", (e) => {
+      e.preventDefault();
+      resetModal();
     });
   }
 
@@ -107,10 +111,43 @@
     });
   }
 
+  function attachPaymentMethodToStripeAccount(paymentMethod) {
+    fetch("/advantage/payment-method", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        payment_method_id: paymentMethod.id,
+        account_id: accountID,
+      }),
+    })
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        toggleProcessingState();
+
+        if (data.message) {
+          handleCardError(data.message);
+        } else if (data.createdAt) {
+          setPaymentInformation(paymentMethod);
+          showPayDialog();
+        } else {
+          presentCardError();
+        }
+      })
+      .catch(() => {
+        presentCardError();
+      });
+  }
+
   function createPaymentMethod() {
     let formData = new FormData(form);
 
-    addPaymentMethodButton.disabled = true;
+    toggleProcessingState();
 
     stripe
       .createPaymentMethod({
@@ -127,46 +164,15 @@
           },
         },
       })
-      .then(function (result) {
+      .then((result) => {
         if (result.paymentMethod) {
-          fetch("/advantage/payment-method", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              payment_method_id: result.paymentMethod.id,
-              account_id: accountID,
-            }),
-          })
-            .then((response) => {
-              return response.json();
-            })
-            .then((data) => {
-              if (data.message) {
-                // this is not good, ua-contracts team are working on a better
-                // way to return this data, but it's low on their priority list
-                handleCardError(data.message);
-              } else if (data.createdAt) {
-                setPaymentInformation(result.paymentMethod);
-                showPayDialog();
-              } else {
-                console.log(data);
-                // TODO: how do we want to handle errors creating payment methods?
-                // Feels like it wouldn't inspire confidence to ask the user to try
-                // inputting them again.
-                presentCardError();
-              }
-            });
+          attachPaymentMethodToStripeAccount(result.paymentMethod);
         } else {
           presentCardError(result.error.message);
         }
       })
-      .catch((error) => {
-        // TODO handle this error
-        console.log(error);
+      .catch(() => {
+        presentCardError();
       });
   }
 
@@ -184,6 +190,8 @@
   }
 
   function handleIncompletePayment(invoice) {
+    toggleProcessingState();
+
     if (
       invoice.pi_status === "requires_payment_method" &&
       invoice.decline_code
@@ -220,7 +228,6 @@
   }
 
   function handleSuccessfulPayment() {
-    alert("payment successful");
     setTimeout(() => {
       location.reload();
     }, 3000);
@@ -235,6 +242,7 @@
         if (renewal.status !== "done") {
           handleIncompleteRenewal(renewal);
         } else {
+          toggleProcessingState();
           handleSuccessfulPayment();
         }
       })
@@ -254,7 +262,7 @@
   }
 
   function processStripePayment() {
-    processPaymentButton.disabled = true;
+    toggleProcessingState();
 
     fetch(`/advantage/renewals/${renewalID}/process-payment`, {
       method: "POST",
@@ -267,6 +275,17 @@
         // TODO handle this error
         console.log(error);
       });
+  }
+
+  function resetModal() {
+    form.reset();
+    card.clear();
+    form.classList.remove("u-hide");
+    paymentMethodDetails.classList.add("u-hide");
+    addPaymentMethodButton.classList.remove("u-hide");
+    addPaymentMethodButton.disabled = true;
+    processPaymentButton.classList.add("u-hide");
+    processPaymentButton.disabled = true;
   }
 
   function setRenewalInformation(renewalData) {
@@ -316,20 +335,25 @@
 
   function showPayDialog() {
     form.classList.add("u-hide");
-    paymentMethodDetails.classList.remove("u-hide");
     addPaymentMethodButton.classList.add("u-hide");
+
+    paymentMethodDetails.classList.remove("u-hide");
     processPaymentButton.classList.remove("u-hide");
     processPaymentButton.disabled = false;
   }
 
-  function resetModal() {
-    form.reset();
-    card.clear();
-    form.classList.remove("u-hide");
-    paymentMethodDetails.classList.add("u-hide");
-    addPaymentMethodButton.classList.remove("u-hide");
-    addPaymentMethodButton.disabled = true;
-    processPaymentButton.classList.add("u-hide");
-    processPaymentButton.disabled = true;
+  function toggleProcessingState() {
+    if (loadingIndicator.classList.contains("u-hide")) {
+      addPaymentMethodButton.disabled = true;
+      cancelModalButton.disabled = true;
+      processPaymentButton.disabled = true;
+
+      setTimeout(() => {
+        loadingIndicator.classList.remove("u-hide");
+      }, 2000);
+    } else {
+      cancelModalButton.disabled = false;
+      loadingIndicator.classList.add("u-hide");
+    }
   }
 })();

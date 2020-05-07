@@ -20,6 +20,7 @@ from canonicalwebteam.store_api.stores.snapstore import SnapStore
 from canonicalwebteam.launchpad import Launchpad
 from geolite2 import geolite2
 from requests.exceptions import HTTPError
+from datetime import datetime
 
 
 # Local
@@ -341,6 +342,9 @@ def advantage_view():
     enterprise_contracts = {}
     entitlements = {}
     open_subscription = flask.request.args.get("subscription", None)
+    stripe_publishable_key = os.getenv(
+        "STRIPE_PUBLISHABLE_KEY", "pk_test_yndN9H0GcJffPe0W58Nm64cM00riYG4N46"
+    )
 
     if user_info(flask.session):
         advantage = AdvantageContracts(
@@ -501,6 +505,7 @@ def advantage_view():
         enterprise_contracts=enterprise_contracts,
         personal_account=personal_account,
         open_subscription=open_subscription,
+        stripe_publishable_key=stripe_publishable_key,
     )
 
 

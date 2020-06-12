@@ -425,7 +425,8 @@ summary {
   }
 
   td:not(.p-table-expanding__panel):not(.p-table--open) {
-    border: 1px solid transparent;
+    border-left: 1px solid transparent;
+    border-right: 1px solid transparent;
   }
 
   .p-table__row {
@@ -469,12 +470,18 @@ summary {
   .u-toggle {
     background: transparent;
     border: 0;
+    bottom: 0;
+    left: 0;
     margin-bottom: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 100%;
 
     &--full-width {
       height: 100%;
       overflow: hidden;
-      padding: 0.5rem 2.5rem 0.5rem 0.5rem;
+      padding: 0.7rem 2.5rem 0.7rem 0.5rem;
       padding-right: 2rem;
       position: relative;
       text-overflow: ellipsis;
@@ -484,12 +491,19 @@ summary {
       .p-icon--contextual-menu {
         position: absolute;
         right: 0.5rem;
-        top: 1rem;
+        top: 0.95rem;
       }
     }
 
     &[aria-expanded="true"] .u-toggle__supplemental {
       display: none;
+    }
+
+    span {
+      left: 0;
+      position: absolute;
+      right: 0;
+      top: 0.7rem;
     }
   }
 }

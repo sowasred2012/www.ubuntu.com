@@ -352,27 +352,6 @@ summary {
   }
 }
 
-.p-table-expanding__panel {
-  @extend %vf-card;
-  @extend %vf-is-bordered;
-  @extend %vf-has-round-corners;
-
-  margin-bottom: 0;
-}
-
-.p-table--advantage-contract {
-  margin: 0 auto;
-  width: auto;
-
-  td {
-    display: table-cell;
-  }
-
-  tr {
-    display: table-row;
-  }
-}
-
 // Advantage section
 .p-table--advantage-contract {
   margin: 0 auto;
@@ -443,6 +422,10 @@ summary {
   td {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
+  }
+
+  td:not(.p-table-expanding__panel):not(.p-table--open) {
+    border: 1px solid transparent;
   }
 
   .p-table__row {
